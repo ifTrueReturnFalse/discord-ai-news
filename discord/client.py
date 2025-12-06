@@ -1,15 +1,19 @@
 import requests
 from .types import DiscordPayload
+from pydantic import TypeAdapter
 
 def send_embed(webhook_url: str | None, payload: DiscordPayload):
     if not webhook_url:
         print("❓ No WebHook URL provided !")
         return
 
+    adapter = TypeAdapter(DiscordPayload)
+    payload_clean = adapter.dump_python(payload, mode='json')
+
     try:
         response = requests.post(
             url=webhook_url,
-            json=payload,
+            json=payload_clean,
             timeout=5
         )
 
