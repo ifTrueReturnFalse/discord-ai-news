@@ -34,7 +34,7 @@ def ask_gemini(query: str, persona: str, language: str) -> List[DiscordEmbed]:
     try:
         formatting_response = client.models.generate_content(  # type: ignore
             model="gemini-2.5-flash",
-            contents=f"Here are some raw informations: \n---\n{raw_info}\n---\n Transform this informations in a valid list of DiscordEmbed. Keep the language used in the informations. Make sure the URL are valid. Embed colors are in integer / hexadecimal format (example: 0x7d34eb), pick a random color for each embed. Use the article date for the timestamp, if not found do not use this propertie.",
+            contents=f"Here are some raw informations: \n---\n{raw_info}\n---\n Transform this informations in a valid list of DiscordEmbed. Keep the language used in the informations. Make sure the URL are valid. Embed colors are in integer / hexadecimal format (example: 0x7d34eb), pick a random color for each embed. Use the article date for the timestamp Use markdown to format the informations.",
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_json_schema=adapter.json_schema(),
