@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from discord import DiscordEmbed
 from typing import List
 from pydantic import TypeAdapter
+import time
 
 load_dotenv()
 
@@ -19,7 +20,7 @@ def ask_gemini(query: str, persona: str, language: str) -> List[DiscordEmbed]:
     try:
         research_response = client.models.generate_content(  # type: ignore
             model="gemini-2.5-flash",
-            contents=f"Act as a search engine. Search and respond in this language: {language}. {persona}. Answer to this request: {query}. Make sure the URL are valid.",
+            contents=f"Act as a search engine. Search and respond in this language: {language}. {persona}. Answer to this request: {query}. Make sure the URL are valid. Make sure your informations is valid, today is : '{time.time()}'",
             config=types.GenerateContentConfig(tools=[grounding_tool]),
         )
 
@@ -34,7 +35,7 @@ def ask_gemini(query: str, persona: str, language: str) -> List[DiscordEmbed]:
     try:
         formatting_response = client.models.generate_content(  # type: ignore
             model="gemini-2.5-flash",
-            contents=f"Here are some raw informations: \n---\n{raw_info}\n---\n Transform this informations in a valid list of DiscordEmbed. Keep the language used in the informations. Make sure the URL are valid. Embed colors are in integer / hexadecimal format (example: 0x7d34eb), pick a random color for each embed. Use the article date for the timestamp Use markdown to format the informations.",
+            contents=f"Here are some raw informations: \n---\n{raw_info}\n---\n Transform this informations in a valid list of DiscordEmbed. Keep the language used in the informations. Make sure the URL are valid. Embed colors are in integer / hexadecimal format (example: 0x7d34eb), pick a random color for each embed. Use the article date for the timestamp. Only use markdown to format the informations.",
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_json_schema=adapter.json_schema(),
