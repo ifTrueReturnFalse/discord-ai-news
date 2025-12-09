@@ -6,17 +6,20 @@ from discord import DiscordPayload
 import time
 from pydantic import ValidationError
 
+# Loading the API key
 load_dotenv()
-
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 
 def ask_gemini(query: str, persona: str, language: str) -> DiscordPayload | None:
+    print("Started Gemini sequence")
+    # Creation of the client
     client = genai.Client(api_key=GEMINI_API_KEY)
+    # Preparation of the search tool
     grounding_tool = types.Tool(google_search=types.GoogleSearch())
 
     try:
-        research_prompt = f'''
+        research_prompt = f"""
         Act as a **specialized subject matter expert** for the following topic: {persona}. 
         Search and retrieve a maximum of **5 most recent and relevant articles** for the query: '{query}'.
 
@@ -28,24 +31,29 @@ def ask_gemini(query: str, persona: str, language: str) -> DiscordPayload | None
         Present the result as a raw, numbered Markdown list. The output language must be: {language}.
         Make sure the information is up-to-date and the URLs are valid.
         Current date and time: {time.strftime('%Y-%m-%d %H:%M:%S')}
-        '''
+        """
 
+        print("🤖 Sending the first query")
+
+        # First query to Gemini, to scrap the internet
         research_response = client.models.generate_content(  # type: ignore
             model="gemini-2.5-flash",
             contents=research_prompt,
             config=types.GenerateContentConfig(tools=[grounding_tool]),
         )
 
+        # Get only the sent text
         raw_info = research_response.text
 
         if not raw_info:
-            return None
+            raise Exception("No response from Gemini.")
+    # Error during the first request
     except Exception as e:
         print(f"Gemini error on step 1 (search): {e}")
         return None
 
     try:
-        format_prompt = f'''
+        format_prompt = f"""
         You are a **Discord Payload Generator**. 
         Your only task is to transform the provided raw information into a **valid JSON Discord payload**.
 
@@ -60,8 +68,11 @@ def ask_gemini(query: str, persona: str, language: str) -> DiscordPayload | None
         * The language of the output must match the source information.
 
         **RESPOND WITH THE JSON CODE ONLY. DO NOT INCLUDE ANY ADDITIONAL TEXT, EXPLANATIONS, OR MARKDOWN OUTSIDE OF THE JSON BLOCK.**
-        '''
-        
+        """
+
+        print("🤖 Sending the second query")
+
+        # Second query to Gemini, to format the first answer with the given model
         formatting_response = client.models.generate_content(  # type: ignore
             model="gemini-2.5-flash",
             contents=format_prompt,
@@ -75,11 +86,17 @@ def ask_gemini(query: str, persona: str, language: str) -> DiscordPayload | None
             raise Exception("No response from Gemini.")
 
         try:
-            data: DiscordPayload = DiscordPayload.model_validate_json(formatting_response.text)
+            print("❔ Validation of the result")
+            # Validate the received answer
+            data: DiscordPayload = DiscordPayload.model_validate_json(
+                formatting_response.text
+            )
             return data
+        # Error if the answer is not in the correct format
         except ValidationError as e:
             print(f"Error while validation: {e}")
             return None
+    # Error during the process of the second request
     except Exception as e:
         print(f"Gemini error on step 2 (format): {e}")
         return None
