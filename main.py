@@ -1,5 +1,5 @@
 import os
-from discord import send_embed, DiscordPayload
+from discord import send_embed
 from ai_api.gemini import ask_gemini
 import time
 import json
@@ -36,10 +36,11 @@ def main() -> None:
             print(f"Processing '{task.title}'")
 
             ai_result = ask_gemini(task.query, task.persona, task.language)
-            data: DiscordPayload = {
-                "embeds": ai_result
-            }
-            send_embed(task.discord_webhook, data)
+            if ai_result is None:
+                print("Can't send nothing to Discord")
+                continue
+            else:
+                send_embed(task.discord_webhook, ai_result)
             time.sleep(20)
 
 if __name__ == "__main__":

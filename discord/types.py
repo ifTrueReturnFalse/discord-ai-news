@@ -1,60 +1,60 @@
-from typing import TypedDict, List
+from typing import List, Optional
+from pydantic import BaseModel
 from datetime import datetime
 
-class EmbedThumbnail(TypedDict, total=False):
+class EmbedThumbnail(BaseModel):
     url: str
-    proxy_url: str
-    height: int
-    width: int
+    proxy_url: Optional[str]
+    height: Optional[int]
+    width: Optional[int]
 
-class EmbedVideo(TypedDict, total=False):
+class EmbedVideo(BaseModel):
+    url: Optional[str]
+    proxy_url: Optional[str]
+    height: Optional[int]
+    width: Optional[int]
+
+class EmbedImage(BaseModel):
     url: str
-    proxy_url: str
-    height: int
-    width: int
+    proxy_url: Optional[str]
+    height: Optional[int]
+    width: Optional[int]
 
-class EmbedImage(TypedDict, total=False):
-    url: str
-    proxy_url: str
-    height: int
-    width: int
+class EmbedProvider(BaseModel):
+    name: Optional[str]
+    url: Optional[str]
 
-class EmbedProvider(TypedDict, total=False):
+class EmbedAuthor(BaseModel):
     name: str
-    url: str
+    url: Optional[str]
+    icon_url: Optional[str]
+    proxy_icon_url: Optional[str]
 
-class EmbedAuthor(TypedDict, total=False):
-    name: str
-    url: str
-    icon_url: str
-    proxy_icon_url: str
-
-class EmbedFooter(TypedDict, total=False):
+class EmbedFooter(BaseModel):
     text: str
-    icon_url: str
-    proxy_icon_url: str
+    icon_url: Optional[str]
+    proxy_icon_url: Optional[str]
 
-class EmbedField(TypedDict, total=False):
+class EmbedField(BaseModel):
     name: str
     value: str
-    inline: bool
+    inline: Optional[bool]
 
-class DiscordEmbed(TypedDict, total=False):
-    title: str
-    type: str
-    description: str
-    url: str
-    timestamp: datetime
-    color: int
-    footer: EmbedFooter
-    image: EmbedImage
-    thumbnail: EmbedThumbnail
-    video: EmbedVideo
-    provider: EmbedProvider
-    author: EmbedAuthor
-    fields: List[EmbedField]
+class DiscordEmbed(BaseModel):
+    title: Optional[str]
+    type: Optional[str]
+    description: Optional[str]
+    url: Optional[str]
+    timestamp: Optional[datetime]
+    color: Optional[int]
+    footer: Optional[EmbedFooter]
+    image: Optional[EmbedImage]
+    thumbnail: Optional[EmbedThumbnail]
+    video: Optional[EmbedVideo]
+    provider: Optional[EmbedProvider]
+    author: Optional[EmbedAuthor]
+    fields: Optional[List[EmbedField]]
 
-class DiscordPayload(TypedDict, total=False):
-    content: str | None
-    username: str | None
+class DiscordPayload(BaseModel):
+    content: str
     embeds: List[DiscordEmbed]

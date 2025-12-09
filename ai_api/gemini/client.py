@@ -2,48 +2,84 @@ from google import genai
 from google.genai import types
 import os
 from dotenv import load_dotenv
-from discord import DiscordEmbed
-from typing import List
-from pydantic import TypeAdapter
+from discord import DiscordPayload
 import time
+from pydantic import ValidationError
 
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 
-def ask_gemini(query: str, persona: str, language: str) -> List[DiscordEmbed]:
+def ask_gemini(query: str, persona: str, language: str) -> DiscordPayload | None:
     client = genai.Client(api_key=GEMINI_API_KEY)
-    adapter = TypeAdapter(List[DiscordEmbed])
     grounding_tool = types.Tool(google_search=types.GoogleSearch())
 
     try:
+        research_prompt = f'''
+        Act as a **specialized subject matter expert** for the following topic: {persona}. 
+        Search and retrieve a maximum of **5 most recent and relevant articles** for the query: '{query}'.
+
+        For each article, provide only the following information:
+        1.  A **concise headline**.
+        2.  A **brief summary** (2-3 sentences max).
+        3.  The **full, valid URL** of the source.
+
+        Present the result as a raw, numbered Markdown list. The output language must be: {language}.
+        Make sure the information is up-to-date and the URLs are valid.
+        Current date and time: {time.strftime('%Y-%m-%d %H:%M:%S')}
+        '''
+
         research_response = client.models.generate_content(  # type: ignore
             model="gemini-2.5-flash",
-            contents=f"Act as a search engine. Search and respond in this language: {language}. {persona}. Answer to this request: {query}. Make sure the URL are valid. Make sure your informations is valid, today is : '{time.time()}'",
+            contents=research_prompt,
             config=types.GenerateContentConfig(tools=[grounding_tool]),
         )
 
         raw_info = research_response.text
 
         if not raw_info:
-            return []
+            return None
     except Exception as e:
         print(f"Gemini error on step 1 (search): {e}")
-        return []
+        return None
 
     try:
+        format_prompt = f'''
+        You are a **Discord Payload Generator**. 
+        Your only task is to transform the provided raw information into a **valid JSON Discord payload**.
+
+        Here is the raw information: \n---\n{raw_info}\n---\n
+
+        **JSON Output Constraints:**
+        * The output must be a single JSON object containing the `embeds` array and a small description in `content`.
+        * The array must contain one embed per news item.
+        * The `color` field must be a **random positive integer in hex form** (e.g., `0x123456`).
+        * The `url` field must be the source URL from the raw info.
+        * Use **Markdown** (`**bold**`, `*italic*`) within the `title` and `description` fields.
+        * The language of the output must match the source information.
+
+        **RESPOND WITH THE JSON CODE ONLY. DO NOT INCLUDE ANY ADDITIONAL TEXT, EXPLANATIONS, OR MARKDOWN OUTSIDE OF THE JSON BLOCK.**
+        '''
+        
         formatting_response = client.models.generate_content(  # type: ignore
             model="gemini-2.5-flash",
-            contents=f"Here are some raw informations: \n---\n{raw_info}\n---\n Transform this informations in a valid list of DiscordEmbed. Keep the language used in the informations. Make sure the URL are valid. Embed colors are in integer / hexadecimal format (example: 0x7d34eb), pick a random color for each embed. Use the article date for the timestamp. Only use markdown to format the informations.",
+            contents=format_prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                response_json_schema=adapter.json_schema(),
+                response_json_schema=DiscordPayload.model_json_schema(),
             ),
         )
 
-        data = adapter.validate_json(formatting_response.text)  # type: ignore
-        return data
+        if formatting_response.text is None:
+            raise Exception("No response from Gemini.")
+
+        try:
+            data: DiscordPayload = DiscordPayload.model_validate_json(formatting_response.text)
+            return data
+        except ValidationError as e:
+            print(f"Error while validation: {e}")
+            return None
     except Exception as e:
         print(f"Gemini error on step 2 (format): {e}")
-        return []
+        return None
