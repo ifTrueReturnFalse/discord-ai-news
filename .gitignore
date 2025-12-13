@@ -8,4 +8,4 @@
 __pycache__/
 
 # Tasks file
-tasks.json
+tasks*.json
