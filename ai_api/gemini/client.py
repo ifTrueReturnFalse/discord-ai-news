@@ -27,6 +27,7 @@ def ask_gemini(query: str, persona: str, language: str) -> DiscordPayload | None
         1.  A **concise headline**.
         2.  A **brief summary** (2-3 sentences max).
         3.  The **full, valid URL** of the source.
+        4.  **Crucially, strictly avoid redundancy:** If multiple articles discuss the exact same news or offer, provide only the most comprehensive one. Ensure the final list contains unique news items.
 
         Present the result as a raw, numbered Markdown list. The output language must be: {language}.
         Make sure the information is up-to-date and the URLs are valid.

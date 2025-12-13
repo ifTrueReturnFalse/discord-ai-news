@@ -1,6 +1,5 @@
 import requests
 from .types import DiscordPayload
-from pydantic import TypeAdapter
 
 # Function to send a message, with or without embeds
 def send_embed(webhook_url: str | None, payload: DiscordPayload):
@@ -10,8 +9,7 @@ def send_embed(webhook_url: str | None, payload: DiscordPayload):
         print("❓ No WebHook URL provided !")
         return
 
-    adapter = TypeAdapter(DiscordPayload)
-    payload_clean = adapter.dump_python(payload, mode="json")
+    payload_clean = payload.model_dump(mode='json')
 
     try:
         # Send the payload to the webhook
