@@ -5,14 +5,41 @@ import time
 from tasks import Task, TasksConfig
 from typing import Optional, List
 from pydantic import ValidationError
+from dotenv import load_dotenv
+import base64
+import binascii
 
 
 def main() -> None:
+    # Loading environnement
+    load_dotenv()
+    
     tasks_file_path: str = "tasks.json"
+    env_tasks_config = os.getenv('TASKS_JSON')
     tasks_config: Optional[TasksConfig] = None
 
+    # Check the config in the .env file
+    if env_tasks_config:
+        print("Loading env config")
+        try:
+            tasks_decoded = base64.b64decode(env_tasks_config).decode('utf-8')
+            tasks_config = TasksConfig.model_validate_json(tasks_decoded)
+        except binascii.Error as e:
+            print(f"Error in the env configuration, Base64 invalid or corrupted : {e}")
+            return
+        except UnicodeDecodeError as e:
+            print(f"Error, decoding done but result is not valid UTF-8 : {e}")
+            return
+        except ValidationError as e:
+            print(f"Environnement tasks config not in the correct format : {e}")
+            return
+        except Exception as e:
+            print(f"Error while loading configuration : {e}")
+            return
+
     # Check if their is a local tasks file
-    if os.path.exists(tasks_file_path):
+    elif os.path.exists(tasks_file_path):
+        print("Loading local config")
         try:
             with open(tasks_file_path, "r", encoding="utf-8") as file:
                 # Raw reading
@@ -22,12 +49,11 @@ def main() -> None:
         # Validation error
         except ValidationError as e:
             print(f"Validation error in {tasks_file_path}: {e}")
+            return
         # Unexpected error
         except Exception as e:
             print(f"Something went wrong: {e}")
-    # Not impleted yet
-    else:
-        print("Loading secret tasks in env...")
+            return
 
     # Exit if no config file found
     if not tasks_config:
