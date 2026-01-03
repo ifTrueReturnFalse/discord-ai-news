@@ -2,7 +2,7 @@ name: Daily launch
 
 on:
   schedule:
-    - cron: '23 16 * * *'
+    - cron: '54 17 * * 5'
   workflow_dispatch:
 
 jobs:
