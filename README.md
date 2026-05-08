@@ -1,2 +1,3 @@
-# To come
-## Simple scriopt to use Gemini API to send news or more to a Discord server
+# Simple bot to send topic focus messages trough Gemini API to a Discord server
+
+## More docs soon
